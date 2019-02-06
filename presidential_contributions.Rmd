@@ -1,0 +1,503 @@
+2016 Pesidential Contributions by Matt Montanio
+========================================================
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
+# Load all of the packages that you end up using in your analysis in this code
+# chunk.
+
+# Notice that the parameter "echo" was set to FALSE for this code chunk. This
+# prevents the code from displaying in the knitted HTML output. You should set
+# echo=FALSE for all code chunks in your file, unless it makes sense for your
+# report to show the code that generated a particular plot.
+
+# The other parameters for "message" and "warning" should also be set to FALSE
+# for other code chunks once you have verified that each plot comes out as you
+# want it to. This will clean up the flow of your report.
+
+library(ggplot2)
+library(plyr)
+library(lubridate)
+library(GGally)
+library(memisc)
+library(scales)
+library(gridExtra)
+library(knitr)
+
+# Add code to supress warnings and messages and set global heights and widths for plots
+
+knitr::opts_chunk$set(fig.width=9,fig.height=5,fig.path='Figs/',
+                      fig.align='center',tidy=TRUE,
+                      echo=FALSE,warning=FALSE,message=FALSE)
+
+# Don't use scientific notation for number plots
+options(scipen=999)
+```
+
+```{r echo=FALSE, Load_the_Data}
+# Load the Data
+pc <- read.csv('pres_contributions.csv', row.names=NULL)
+
+# Import caused column names to shift and added an empty column. Remove last column and rename columns
+pc <- subset(pc, select = -election_tp)
+
+pc <- rename(pc, c('row.names'='cmte_id',
+             'cmte_id'='cand_id',
+             'cand_id'='cand_nm',
+             'cand_nm'='contbr_nm',
+             'contbr_nm'='contbr_city',
+             'contbr_city'='contbr_st',
+             'contbr_st'='contbr_zip',
+             'contbr_zip'='contbr_employer',
+             'contbr_employer'='contbr_occupation',
+             'contbr_occupation'='receipt_amt',
+             'contb_receipt_amt'='receipt_dt',
+             'contb_receipt_dt'='receipt_desc',
+             'receipt_desc'='memo_cd',
+             'memo_cd'='memo_text',
+             'memo_text'='form_tp',
+             'form_tp'='file_num',
+             'file_num'='tran_id',
+             'tran_id'='election_tp'))
+
+# At the request of the intial reviewer, I am adding these two lines for convenience to reduce the runtime
+set.seed(1836)
+pc <- pc[sample.int(nrow(pc),100000),]
+```
+
+This report explores a dataset that contains approximately 7.4 million contributions to candidates for the 2016 presidential campaign. At the request of the first reviewer, we are using a sample of 100000 observations.
+
+# Univariate Plots Section
+
+```{r echo=FALSE, warning=FALSE, Univariate_Plots}
+str(pc)
+```
+```{r} 
+#Format receipt_dt as date
+
+pc$receipt_dt <- as.Date(pc$receipt_dt, format = "%d-%b-%y")
+
+```
+```{r message=FALSE}
+
+qplot(x = receipt_dt, data = pc)
+
+```
+  
+Our dataset consists of 18 variables, with over 7.4 million observations (we selected a sample of 100000 observations). Contributions began in early 2015 with the number of contributions increasing until the election in November of 2016. Following the election there appears to be minor contributions.
+  
+```{r}
+summary(pc$cand_nm)
+```
+```{r}
+qplot(x = cand_nm, data = pc) +
+  coord_flip()
+```
+  
+Four candidates (Clinton, Sanders, Trump, Cruz) received a large percentage of the total number of contributions. The final two democratic candidates had considerably more contributions than the top two Republican candidates.
+  
+```{r}
+unique(pc$contbr_st)
+```
+
+```{r}
+summary(pc$contbr_st)
+```
+
+```{r}
+qplot(x = contbr_st, data = pc) +
+  coord_flip()
+```
+```{r message=FALSE, warning=FALSE}
+
+# Create a new column named last_three_elections that shows how the state voted in the prior 3 presidential elections. 'R' if the state voted Republican in all 3, 'D' if the state voted Democrat in the last three, or 'T' if mixed Democrat and Republican vote, AND 'O' if not a state or Washington DC.
+
+pc$last_3_elections <- 'O'
+
+pc$last_3_elections[pc$contbr_st == 'CA' |
+                    pc$contbr_st == 'NY' |
+                    pc$contbr_st == 'MA' |
+                    pc$contbr_st == 'WA' |
+                    pc$contbr_st == 'IL' |
+                    pc$contbr_st == 'PA' |
+                    pc$contbr_st == 'NJ' |
+                    pc$contbr_st == 'OR' |
+                    pc$contbr_st == 'MI' |
+                    pc$contbr_st == 'MN' |
+                    pc$contbr_st == 'CT' |
+                    pc$contbr_st == 'WI' |
+                    pc$contbr_st == 'DC' |
+                    pc$contbr_st == 'RI' |
+                    pc$contbr_st == 'NH' |
+                    pc$contbr_st == 'ME' |
+                    pc$contbr_st == 'HI' |
+                    pc$contbr_st == 'DE' |
+                    pc$contbr_st == 'MD' |
+                    pc$contbr_st == 'VT' ] <- 'D'
+
+pc$last_3_elections[pc$contbr_st == 'TX' |
+                    pc$contbr_st == 'SC' |
+                    pc$contbr_st == 'GA' |
+                    pc$contbr_st == 'AZ' |
+                    pc$contbr_st == 'TN' |
+                    pc$contbr_st == 'MO' |
+                    pc$contbr_st == 'ID' |
+                    pc$contbr_st == 'OK' |
+                    pc$contbr_st == 'NE' |
+                    pc$contbr_st == 'AL' |
+                    pc$contbr_st == 'MT' |
+                    pc$contbr_st == 'KY' |
+                    pc$contbr_st == 'MS' |
+                    pc$contbr_st == 'LA' |
+                    pc$contbr_st == 'KS' |
+                    pc$contbr_st == 'UT' |
+                    pc$contbr_st == 'AR' |
+                    pc$contbr_st == 'AK' |
+                    pc$contbr_st == 'WV' |
+                    pc$contbr_st == 'WY' |
+                    pc$contbr_st == 'SD' |
+                    pc$contbr_st == 'ND' ] <- 'R'
+
+pc$last_3_elections[pc$contbr_st == 'FL' |
+                    pc$contbr_st == 'VA' |
+                    pc$contbr_st == 'OH' |
+                    pc$contbr_st == 'CO' |
+                    pc$contbr_st == 'NC' |
+                    pc$contbr_st == 'NM' |
+                    pc$contbr_st == 'NV' |
+                    pc$contbr_st == 'IN' |
+                    pc$contbr_st == 'IA' ] <- 'T'
+```
+```{r}
+qplot(x = last_3_elections, data = pc)
+```
+  
+Contributions were made from all states, with California making the most number of contributions by far. There were also contributions made from outside the United States. The abbreviations used are not documented, so I do not not exactly where the non-state contributions were made from.  
+
+I created a new variable that shows where the contbr_st voted in the past 3 elections. 'D' means the state where the contribution came from voted Democratic in the past 3 presidential elections, 'R' means that state voted Republican, 'T' shows a mixed, and 'O' is donations that did not come from any of the 50 states or Washington D.c. The number of donations from states that voted Democratic in the past 3 elections far exceeds the number of donations form other states.
+  
+
+```{r}
+
+summary(pc$receipt_amt)
+
+```
+```{r}
+
+#Find number of rows with negative contributions
+nrow(subset(pc, receipt_amt < 0))
+
+```
+  
+```{r}
+
+ggplot(aes(x = receipt_amt), data = pc) +
+  geom_histogram(breaks = c(seq(0, 1000, by = 100)))
+
+```
+```{r message=FALSE, warning=FALSE}
+
+ggplot(aes(x = log(receipt_amt)), data = pc) +
+  geom_histogram()
+
+```
+
+Out of our sample, there are 1344 rows that have negative contributions. Based on the information in the data file, these would appear to be refunds by the campaigns. A vast majority of contributions made were less than $100. 
+
+
+# Univariate Analysis
+
+### What is the structure of your dataset?
+
+We have taken a sample of 100,000 observations from a dataset of  7,440,252 contributions with 19 features (commitee id, candidate id, candidate name, contributer name, contributer city, contributor state, contributor zip code, contributor employer, contributor occupation, receipt amount, receipt date, receipt description, memo code, memo text, form type, file number, transaction id, election type, and last_3_elections).
+
+### What is/are the main feature(s) of interest in your dataset?
+
+The main features in the data set are receipt amount, contributor state, and candidate name. I'd like to determine which features are best for predicting which candidate is receiving a contribution or how much a contribution will be for based on state and amount. I think that geopraphy and amount of donation, in addition to other variables, can be used to build a predictive model to candidate contributions. 
+
+### What other features in the dataset do you think will help support your \
+investigation into your feature(s) of interest?
+
+Occupation, employer, last_3_elections, and receipt date might also contribute to the model. 
+
+### Did you create any new variables from existing variables in the dataset?
+
+I changed the receipt date from factor to date format. I created a new variable called 'last_3_elections' that classifies each state where the donation came from based on how that state voted in the prior 3 presidential elecetions:  
+
+D - state voted Democratic in all 3  
+R - state voted Republican in all 3  
+T - mixed vote in past 3 elections  
+O - Not a state or Washington D.c.  
+
+### Of the features you investigated, were there any unusual distributions? \
+Did you perform any operations on the data to tidy, adjust, or change the form \
+of the data? If so, why did you do this?
+
+Receipt amounts was right skewed, so I transormed the distribution on a log scale. The new distribution is more normally distributed.
+
+# Bivariate Plots Section
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE, fig.height=7}
+
+#Create a new data frame only showing contributions to the top 2 Republican and Democratic candidates
+pc_top4 <- pc[pc$cand_nm  == "Clinton, Hillary Rodham" | 
+                pc$cand_nm == "Trump, Donald J." |
+                pc$cand_nm == "Sanders, Bernard" | 
+                pc$cand_nm == "Cruz, Rafael Edward 'Ted'", ]
+
+#Remove the empty factors of cand_nm
+pc_top4$cand_nm <- factor(pc_top4$cand_nm)
+
+#Create a scatterplot matrix using cand_nm, receipt_amt, receipt_dt, and last_3_elections
+ggpairs(pc_top4, columns = c(3, 10, 11, 19)) +
+  theme(text = element_text(size=8),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1, size = 7))
+```
+
+This chart matrix shows the correlations between cand_nm, receipt_amt, receipt_dt, and last_3_elections. There are no obvious strong corrlations that I can see here, so I want to take a closer look at using some individual charts.
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+
+# Scatter plot showing 'receipt_amt' against 'receipt_dt'
+ggplot(aes(x = receipt_dt, y = receipt_amt), data = pc_top4) +
+  geom_jitter(alpha = 1/10) +
+  stat_smooth(method = 'lm') +
+  scale_y_continuous(limits = c(0, quantile(pc_top4$receipt_amt, 0.99))) +
+  scale_x_date(limits = c(as.Date("2014-01-01"), as.Date("2018-01-01")))
+
+```
+
+Here we look at recipt_amt as time moves closer to the election. There appears to be a slight increase in the amount per controibution as the election got closer, as seen by the strong density area increasing as you move along the x-axis. However, the linear model line appears to have a negative slope.
+
+```{r warning=FALSE}
+
+# Bar chart showing total contributions to each candidate
+ggplot(aes(x = cand_nm, y = receipt_amt), data = pc_top4) +
+  geom_bar(aes(fill = cand_nm), stat = 'summary', fun.y = sum) +
+  scale_y_continuous(limits = c(0, NA)) +
+  theme(legend.position = "none")
+  
+```
+
+Here we take a closer look at the total contributions per candidate. Clinton totals more donations than the other 3 candidates combined.
+
+```{r warning=FALSE}
+
+# Box plot showing where distribution of each donation according to 'last_3_elections' variable 
+
+ggplot(aes(x = last_3_elections, y = receipt_amt), data = pc_top4) +
+  geom_boxplot(alpha = 1/5) +
+  scale_y_continuous(limits = c(0, NA))
+
+```
+```{r warning=FALSE}
+
+# Zoom in on the box 
+ggplot(aes(x = last_3_elections, y = receipt_amt), data = subset(pc_top4, pc_top4$receipt_amt < 75)) +
+  geom_boxplot(alpha = 1/5) +
+  scale_y_continuous(limits = c(0, NA))
+
+```
+
+Here we take a look at contributions according to how states voted in prior elections. The first chart shows that there is a larger number of big money contributions coming from states that voted democratic, which might explain some of the reason Clinton totaled more donations. Then, we zoom in to see distribution of the majority of donations. The main distribution is pretty similar.
+
+```{r}
+
+ggplot(aes(x = cand_nm), data = subset(pc_top4, pc_top4$receipt_amt > 1000 & (cand_nm == 'Clinton, Hillary Rodham' | cand_nm == 'Trump, Donald J.'))) +
+  geom_bar(stat="count") 
+  
+```
+```{r}
+
+ggplot(aes(x = cand_nm), data = pc_top4) +
+  geom_bar(stat="count") 
+
+```
+
+This shows the total number of contributions to each candidate.  
+
+# Bivariate Analysis
+
+### Talk about some of the relationships you observed in this part of the \
+investigation. How did the feature(s) of interest vary with other features in \
+the dataset?
+
+I decided to only look at the top 2 republican and democratic candidates, so I created a subset with only that information. Clinton received more donations than the other three candidates combined. This may be because states that voted democratic had a larger number of big money donations.
+
+# Multivariate Plots Section
+
+```{r echo=FALSE, warning=FALSE}
+
+#Plot total contributions to each candidate over time
+ggplot(aes(x = receipt_dt, y = receipt_amt), data = pc_top4) +
+  geom_line(aes(color = cand_nm), stat = 'summary', fun.y = sum) +
+  scale_y_continuous(limits = c(0, NA)) +
+  scale_x_date(limits = c(as.Date("2015-01-01"), as.Date("2017-01-01")))
+
+```
+```{r message=FALSE, warning=FALSE}
+
+#Plot total contributions to each republican candidate over time
+ggplot(aes(x = receipt_dt, y = receipt_amt), 
+       data = subset(pc_top4, cand_nm == "Cruz, Rafael Edward 'Ted'" | 
+                       cand_nm == "Trump, Donald J.")) +
+  geom_line(aes(color = cand_nm), stat = 'summary', fun.y = sum) +
+  scale_y_continuous(limits = c(0, NA)) +
+  scale_x_date(limits = c(as.Date("2015-01-01"), as.Date("2017-01-01")))
+
+```
+
+```{r message=FALSE, warning=FALSE}
+
+#Plot total contributions to each democratic candidate over time
+ggplot(aes(x = receipt_dt, y = receipt_amt), 
+       data = subset(pc_top4, cand_nm == "Clinton, Hillary Rodham" | 
+                       cand_nm == "Sanders, Bernard")) +
+  geom_line(aes(color = cand_nm), stat = 'summary', fun.y = sum) +
+  scale_y_continuous(limits = c(0, NA)) +
+  scale_x_date(limits = c(as.Date("2015-01-01"), as.Date("2017-01-01")))
+
+```
+
+We can see contributions to each candidate over time. As expected, when the primary elections ended, most contributions were made to Clinton and Trump. When breaking down contributions by party, Cruz was receiving significantly more contributions than Trump until after the primaries and Bernie Sanders had a contribution spike right before the primaries.
+
+```{r warning=FALSE}
+
+#Plot total contribution to each candidate by state election history
+ggplot(aes(x = cand_nm, y = receipt_amt), data = pc_top4) +
+  geom_bar(aes(fill = last_3_elections), stat = 'summary', fun.y = sum) +
+  scale_y_continuous(limits = c(0, NA)) 
+
+```
+
+Clinton received more contributions from Republican leaning  and toos-up states than Trump.
+
+```{r warning=FALSE}
+
+#Plot total contributions by tendencies of states over time
+ggplot(aes(x = receipt_dt, y = receipt_amt), data = subset(pc_top4, pc_top4$receipt_amt < 15000)) +
+  geom_line(aes(color = last_3_elections), stat = 'summary', fun.y = sum) +
+  scale_y_continuous(limits = c(0, NA)) +
+  scale_x_date(limits = c(as.Date("2015-01-01"), as.Date("2017-01-01")))
+
+```
+
+Democratic leaning states heavily increased their donations as the election neared.
+
+```{r}
+
+#Plot total contributions over time to Trump and Clinton by Republican leaning states only
+ggplot(aes(x = receipt_dt, y = receipt_amt), 
+       data = subset(pc_top4, last_3_elections == "R" & 
+      (cand_nm == 'Clinton, Hillary Rodham' | cand_nm == 'Trump, Donald J.'))) +
+  geom_line(aes(color = cand_nm), stat = 'summary', fun.y = sum) +
+  scale_x_date(limits = c(as.Date("2015-01-01"), as.Date("2017-01-01")))
+
+```
+
+After the primaries, an astonishing amount of contributions were made to Clinton by Republican leaning states. This is a not expected.
+
+```{r warning=FALSE}
+#Plot total contributions over time to Trump and Clinton by Democratic leaning states only
+ggplot(aes(x = receipt_dt, y = receipt_amt), 
+       data = subset(pc_top4, last_3_elections == "D" & 
+      (cand_nm == 'Clinton, Hillary Rodham' | cand_nm == 'Trump, Donald J.'))) +
+  geom_line(aes(color = cand_nm), stat = 'summary', fun.y = sum) +
+  scale_x_date(limits = c(as.Date("2015-01-01"), as.Date("2017-01-01")))
+
+```
+
+As expected, after the primaries, Democratic leaning states donated heavily to Clinton.
+
+# Multivariate Analysis
+
+### Talk about some of the relationships you observed in this part of the \
+investigation. Were there features that strengthened each other in terms of \
+looking at your feature(s) of interest?
+
+Again we see that Clinton had substantially more contributions than the other candidates. We see that she had the most contributions from rebublican leaning, democratic leaning, and toss-up states. 
+
+### Were there any interesting or surprising interactions between features?
+
+One surprising feature is that Republican leaning states started donating heavily to Clinton when the only 2 candidates remaing were Clinton and Trump. I would expect Republican leaning states would contribute to the Republican candidate.
+
+------
+
+# Final Plots and Summary
+
+### Plot One
+```{r echo=FALSE, warning=FALSE}
+
+pc_top4$last_3_elections <- factor(pc_top4$last_3_elections, 
+                                   levels = c('D','R', 'T', 'O'), 
+                                   labels = c('Democrat', 'Republican', 
+                                              'Toss-Up', 'Other'))
+
+
+ggplot(aes(x = cand_nm, y = receipt_amt), data = pc_top4) +
+  geom_bar(aes(fill = last_3_elections), stat = 'summary', fun.y = sum) +
+  scale_y_continuous(limits = c(0, NA)) +
+  labs(title = 'Contributions to Candidates by State Voting Tendencies',        x = 'Candidates', y = 'Total Contributions ($)', 
+       fill = 'State Tendencies') +
+  theme(axis.text.x = element_text(size = 9))
+
+```
+
+### Description One
+
+This shows how much money each candidate received. The donations are broken down into contributions from voting tendencies by state. Clinton received the most total contributions and the most from each of the state voting tendency categories.
+
+### Plot Two
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+plot1 <- ggplot(aes(x = receipt_dt, y = receipt_amt), 
+       data = subset(pc_top4, last_3_elections == "Democrat" & 
+      (cand_nm == 'Clinton, Hillary Rodham' | cand_nm == 'Trump, Donald J.'))) +
+  geom_line(aes(color = cand_nm), stat = 'summary', fun.y = sum) +
+  scale_x_date(limits = c(as.Date("2015-01-01"), as.Date("2017-01-01"))) +
+  labs(title = 'Contributions by Democratic Leaning States', x = 'Date', y = 'Total Contributions ($)', color = 'Candidates')
+  
+
+plot2 <- ggplot(aes(x = receipt_dt, y = receipt_amt), 
+       data = subset(pc_top4, last_3_elections == "Republican" & 
+      (cand_nm == 'Clinton, Hillary Rodham' | cand_nm == 'Trump, Donald J.'))) +
+  geom_line(aes(color = cand_nm), stat = 'summary', fun.y = sum) +
+  scale_x_date(limits = c(as.Date("2015-01-01"), as.Date("2017-01-01"))) +
+  labs(title = 'Contributions by Republican Leaning States', x = 'Date', y = 'Total Contributions ($)', color = 'Candidates')
+
+grid.arrange(plot1, plot2)
+
+```
+
+### Description Two
+
+This side-by-side shows contributions over time to Clinton and Trump. The first shows contributions by democratic leaning states. As predicted, Trump recieved a small proportion compared to Clinton.  
+
+The second shows contributions by republican leaning states. Interestingly, Clinton received a larger proprtion of these donations than I would have expected. Before the primaries ended, Clinton was receiving more donations than Trump from these states. After the primaries, Trump's donations surpassed Clintons in these states, but Clinton still held a larger proportion than expected.
+
+### Plot Three
+```{r echo=FALSE, Plot_Three}
+
+col = c('blue', 'red', 'blue', 'red')
+ggplot(aes(x = cand_nm, fill=cand_nm), data = pc_top4) +
+  geom_bar(stat="count") +
+  labs(title='Number of Donations', x = 'Candidates', 
+       y = 'Total # of Donations', 
+       fill = 'Candidates\n(Blue = Democratic,\n Red = Republican') +     scale_fill_manual(values=col) +
+  theme(axis.text.x = element_text(size = 9))
+  
+```
+
+### Description Three
+
+This shows the total number of contributions to each candidate. As predicted, Clinton received the highest number of contributions. Surprisingly, Sanders received the second hghest number. This means that Sanders' average contributions were small. Democrats totaled a considerable higher number of donations.
+
+------
+
+# Reflection
+
+It was brought to my attention in the first review that this was not the correct suggested dataset. This might explain why I had some difficulty narrowing down the information and focusing on very specific items to analyze. I found the dataset very interesting, but found it difficult to find strong relationships. That might be because most of the variables are categorical and I'm used to working with numeric variables.
+  
+Learning and implementing the code was not too difficult. I did refer to my lesson notes quite a bit. I also used stackoverflow as a resourse. It took a while for me to put this together, but most of that was trying to get the right code to present what I wanted and not dealing with the data.
+
+Once I narrowed down the candidates and variables I wanted to work with, I was able to find some patterns and explore some interesting topics. I would like to explore this data more using the occupation and employer variables. I could try to break those variables into classifications and do more exploration. I would be interested to see if people working in specific sectors or companies contributed more to certain candidates. I would alos like to pinpoint specific news during the election and see how that effected contributions to candidates.
+
