@@ -493,11 +493,4 @@ This shows the total number of contributions to each candidate. As predicted, Cl
 
 ------
 
-# Reflection
-
-It was brought to my attention in the first review that this was not the correct suggested dataset. This might explain why I had some difficulty narrowing down the information and focusing on very specific items to analyze. I found the dataset very interesting, but found it difficult to find strong relationships. That might be because most of the variables are categorical and I'm used to working with numeric variables.
-  
-Learning and implementing the code was not too difficult. I did refer to my lesson notes quite a bit. I also used stackoverflow as a resourse. It took a while for me to put this together, but most of that was trying to get the right code to present what I wanted and not dealing with the data.
-
-Once I narrowed down the candidates and variables I wanted to work with, I was able to find some patterns and explore some interesting topics. I would like to explore this data more using the occupation and employer variables. I could try to break those variables into classifications and do more exploration. I would be interested to see if people working in specific sectors or companies contributed more to certain candidates. I would alos like to pinpoint specific news during the election and see how that effected contributions to candidates.
 
